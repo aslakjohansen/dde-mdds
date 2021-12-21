@@ -9,5 +9,5 @@ go get github.com/confluentinc/confluent-kafka-go/kafka
 
 ```shell
 make
-./producer $HOSTNAME:$PORT
+./producer
 ```
