@@ -31,21 +31,19 @@ func producer (deviceid string, sensorid string, duration int, initial float64) 
 	}
 	defer p.Close()
 	
-  // Delivery report handler for produced messages
+  // delivery report handler for produced messages
   go func() {
     for e := range p.Events() {
     switch ev := e.(type) {
       case *kafka.Message:
         if ev.TopicPartition.Error != nil {
           fmt.Printf("Delivery failed: %v\n", ev.TopicPartition)
-        } else {
-//          fmt.Printf("Delivered message to %v\n", ev.TopicPartition)
         }
       }
     }
   }()
   
-  // Produce messages to topic (asynchronously)
+  // produce messages to topic (asynchronously)
   var value float64 = initial
   for {
     t := strings.Split(time.Now().Format(time.RFC3339Nano), "+")[0]+"Z"
@@ -62,7 +60,6 @@ func producer (deviceid string, sensorid string, duration int, initial float64) 
     }
     
     encoded, _ := json.Marshal(msg)
-//    fmt.Printf("Success", success)
     
     p.Produce(&kafka.Message{
       TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
@@ -77,9 +74,7 @@ func producer (deviceid string, sensorid string, duration int, initial float64) 
 }
 
 func main () {
-  go producer("70b3d54750130803", "Energy23_32", 10,  
-  
-  1.0)
+  go producer("70b3d54750130803", "Energy23_32", 10,  1.0)
   go producer("a81758fffe047019", "Battery"    , 11, 12.0)
   go producer("70b3d54750130722", "Energy20_32",  7,  7.0)
   
