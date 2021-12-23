@@ -1,13 +1,13 @@
 -- timeseries metadata
 CREATE TABLE metadata(
-  id INT PRIMARY KEY NOT NULL,
+  id SERIAL PRIMARY KEY,
   device_id CHAR(16) NOT NULL,
   sensor_id CHAR(99) NOT NULL
 );
 
 -- raw samples
 CREATE TABLE samples(
-  id INT PRIMARY KEY NOT NULL,
+  id SERIAL PRIMARY KEY,
   metadata_id INT,
   time  TIMESTAMP,
   value REAL,
@@ -16,7 +16,7 @@ CREATE TABLE samples(
 
 -- List of tables which have been processed
 CREATE TABLE control(
-  id INT PRIMARY KEY NOT NULL,
+  id SERIAL PRIMARY KEY,
   metadata_id INT,
   CONSTRAINT fk_metadata FOREIGN KEY(metadata_id) REFERENCES metadata(id)
 );
