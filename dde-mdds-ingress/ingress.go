@@ -33,7 +33,7 @@ func main () {
     panic(err)
   }
   
-  c.SubscribeTopics([]string{"myTopic", "^aRegex.*[Tt]opic"}, nil)
+  c.SubscribeTopics([]string{"myTopic"}, nil)
   
   for {
     encoded, err := c.ReadMessage(-1)
