@@ -2,8 +2,8 @@ build:
 	docker build . -t dde-mdds-postgres
 
 run:
-	docker run -d dde-mdds-postgres
+	docker run -p 5432:5432 -d dde-mdds-postgres
 
 stop:
-	docker stop -d dde-mdds-postgres
+	echo docker stop <id>
 
