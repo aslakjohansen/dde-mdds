@@ -48,6 +48,7 @@ func lookup_id (db *sql.DB, deviceid string, sensorid string) int {
   
   key := deviceid+""+sensorid
   
+  // check cache
   id, exists := key2id[key]
   if exists {
     return id
@@ -56,10 +57,10 @@ func lookup_id (db *sql.DB, deviceid string, sensorid string) int {
   // make sure mapping exists
   q = fmt.Sprintf("INSERT INTO metadata (device_id, sensor_id) VALUES ('%s', '%s')", deviceid, sensorid)
   _, err := db.Exec(q)
-  if err != nil {
-    fmt.Println("Unable to insert metadata:", q, err);
-    return -1
-  }
+//  if err != nil {
+//    fmt.Println("Unable to insert metadata:", q, err);
+//    return -1
+//  }
   
   // look up mapping
   q = fmt.Sprintf("SELECT id FROM metadata WHERE device_id='%s' AND sensor_id='%s'", deviceid, sensorid)

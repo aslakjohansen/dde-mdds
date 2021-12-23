@@ -2,7 +2,8 @@
 CREATE TABLE metadata(
   id SERIAL PRIMARY KEY,
   device_id CHAR(16) NOT NULL,
-  sensor_id CHAR(99) NOT NULL
+  sensor_id CHAR(99) NOT NULL,
+  UNIQUE (device_id, sensor_id)
 );
 
 -- raw samples
