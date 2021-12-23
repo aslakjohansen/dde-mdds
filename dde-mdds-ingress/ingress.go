@@ -18,6 +18,10 @@ type Message struct {
     DeviceID     string  `json:"DeviceID"`
 }
 
+func insert (deviceid string, sensorid string, timestamp string, value float64) {
+  
+}
+
 func main () {
   c, err := kafka.NewConsumer(&kafka.ConfigMap{
     "bootstrap.servers": "localhost",
@@ -34,7 +38,6 @@ func main () {
   for {
     encoded, err := c.ReadMessage(-1)
     if err == nil {
-//      fmt.Printf("Message on %s: %s\n", encoded.TopicPartition, string(encoded.Value))
       var msg Message
       err := json.Unmarshal(encoded.Value, &msg)
       if err == nil {
@@ -43,10 +46,8 @@ func main () {
         var timestamp string  = msg.TimeStamp
         var value     float64 = msg.Value
         fmt.Println(deviceid, sensorid, timestamp, value)
+        insert(deviceid, sensorid, timestamp, value)
       }
-//      } else {
-//        fmt.Println(encoded)
-//      }
     } else {
       // The client will automatically try to recover from all errors.
       fmt.Printf("Consumer error: %v (%v)\n", err, encoded)
