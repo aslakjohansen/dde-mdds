@@ -41,10 +41,12 @@ type Message struct {
 
 func lookup_id (db *sql.DB, deviceid string, sensorid string) int {
   var q string
+  fmt.Println("a")
   
   // avoid potential race conditions
   lookup_mutex.Lock()
   defer lookup_mutex.Unlock()
+  fmt.Println("b")
   
   key := deviceid+""+sensorid
   
@@ -53,10 +55,15 @@ func lookup_id (db *sql.DB, deviceid string, sensorid string) int {
   if exists {
     return id
   }
+  fmt.Println("c")
   
   // make sure mapping exists
   q = fmt.Sprintf("INSERT INTO metadata (device_id, sensor_id) VALUES ('%s', '%s')", deviceid, sensorid)
-  _, err := db.Exec(q)
+  fmt.Println(" -", q)
+//  _, err :=
+  fmt.Println("cd")
+  db.Exec(q)
+  fmt.Println("d")
   
   // look up mapping
   q = fmt.Sprintf("SELECT id FROM metadata WHERE device_id='%s' AND sensor_id='%s'", deviceid, sensorid)
@@ -65,6 +72,7 @@ func lookup_id (db *sql.DB, deviceid string, sensorid string) int {
     fmt.Println("Unable to lookup metadata:", q, err);
     return -1
   }
+  fmt.Println("e")
   defer rows.Close()
   for rows.Next() {
     err = rows.Scan(&id)
@@ -74,21 +82,30 @@ func lookup_id (db *sql.DB, deviceid string, sensorid string) int {
     }
     
     key2id[key] = id
+    
+    // insert in control
+    q = fmt.Sprintf("INSERT INTO control (metadata_id, processed) VALUES ('%d', FALSE)", id)
+    _, err := db.Exec(q)
+    if err != nil {
+      fmt.Println("Unable to add to control:", q, err);
+    }
+    
     return id
   }
+  fmt.Println("f")
   return -1
 }
 
 func insert (ch chan Message) {
   // connect to database
   
-  psqlconn := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable",
-        user,
-        password,
-        host,
-        port,
-        dbname)
-//  psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+//  psqlconn := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable",
+//        user,
+//        password,
+//        host,
+//        port,
+//        dbname)
+  psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
   db, err := sql.Open("postgres", psqlconn)
   if err != nil {
     fmt.Println("Unable to create connection to database", err)
@@ -106,6 +123,7 @@ func insert (ch chan Message) {
     
     var id int = lookup_id(db, deviceid, sensorid)
     if id==-1 {
+      fmt.Println("Unable to lookup id")
       continue
     }
     

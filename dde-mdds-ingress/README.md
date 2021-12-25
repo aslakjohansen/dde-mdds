@@ -12,3 +12,8 @@ go get github.com/lib/pq
 make
 ./ingress
 ```
+
+# TODO
+
+Wrap the writes to the `metadata` and `control`tables in a transaction.
+

@@ -19,6 +19,7 @@ CREATE TABLE samples(
 CREATE TABLE control(
   id SERIAL PRIMARY KEY,
   metadata_id INT,
+  processed BOOLEAN,
   CONSTRAINT fk_metadata FOREIGN KEY(metadata_id) REFERENCES metadata(id)
 );
 
