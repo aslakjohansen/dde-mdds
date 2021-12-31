@@ -44,7 +44,6 @@ func start_postgress_client () (*sql.DB, error) {
     fmt.Println("Unable to create connection to database", err)
     return db, err
   }
-  defer db.Close()
   
   return db, err
 }
@@ -113,11 +112,12 @@ func main () {
 //    wg.Add(WORKER_COUNT)
     
     // fetch
-    q := fmt.Sprintf("SELECT device_id, sensor_id, MAX(s1.time-s2.time) timediff FROM control, metadata, samples AS s1, samples AS s2 WHERE control.metadata_id=metadata.id AND s1.id=metadata.id AND s2.id=metadata.id AND control.processed=FALSE GROUP BY metadata.device_id, metadata.sensor_id")
+    q := fmt.Sprintf("SELECT device_id, sensor_id, MAX(EXTRACT(EPOCH FROM (s1.time-s2.time))) timediff FROM control, metadata, samples AS s1, samples AS s2 WHERE control.metadata_id=metadata.id AND s1.metadata_id=metadata.id AND s2.metadata_id=s1.metadata_id AND control.processed=FALSE GROUP BY metadata.device_id, metadata.sensor_id")
+    fmt.Println(q)
     rows, err := db.Query(q)
     if err != nil {
       fmt.Println("Unable to query worklist:", q, err);
-      wg.Done()
+//      wg.Done()
     }
     
     // push to queue
