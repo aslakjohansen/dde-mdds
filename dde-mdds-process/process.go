@@ -4,6 +4,7 @@ import (
   "fmt"
   "sync"
   "time"
+  "container/list"
   
   // kafka
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -16,6 +17,11 @@ import (
 type WorkPackage struct {
   device_id string
   sensor_id string
+}
+
+type Reading struct {
+  time  time.Time
+  value float64
 }
 
 const (
@@ -80,9 +86,33 @@ func worker () {
 	defer k.Close()
   
   for wp := range worklist {
+    var readings *list.List = list.New()
     fmt.Println(wp)
     
     // fetch timeseries
+    q := fmt.Sprintf("SELECT samples.time, samples.value FROM metadata, samples WHERE samples.metadata_id = metadata.id")
+    fmt.Println(q)
+    rows, err := db.Query(q)
+    if err != nil {
+      fmt.Println("Unable to query samples:", q, err);
+      wg.Done()
+      continue
+    } else {
+      for rows.Next() {
+        var r Reading
+//        var t time.Time
+//        var v float64
+        err = rows.Scan(&r.time, &r.value)
+        if err != nil {
+          fmt.Println("Unable to scan samples:", q, err);
+          break
+        } else {
+          fmt.Println(r)
+          readings.PushBack(r)
+        }
+      }
+    }
+    fmt.Println(readings.Len())
     
     // start worker
     
