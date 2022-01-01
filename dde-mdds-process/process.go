@@ -5,6 +5,9 @@ import (
   "sync"
   "time"
   "container/list"
+  "os/exec"
+  "io"
+  "bufio"
   
   // kafka
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -111,10 +114,58 @@ func worker () {
     }
     
     // start worker
+    var cmd *
+    exec.Cmd = exec.Command("/usr/bin/python", "./workers/dummy.py")
+	  stdin, err := cmd.StdinPipe()
+	  if err != nil {
+		  fmt.Println("Unable to connect to STDIN of worker:", err)
+	  }
+	  stdout, err := cmd.StdoutPipe()
+	  if err != nil {
+		  fmt.Println("Unable to connect to STDOUT of worker:", err)
+	  }
+    err = cmd.Start()
+	  if err != nil {
+		  fmt.Println("Unable to start worker:", err)
+		  wg.Done()
+		  continue
+	  }
     
     // push timeseries to worker
+    for e := readings.Front(); e != nil; e = e.Next() {
+      var r Reading = e.Value.(Reading)
+//      fmt.Printf("%d %f\n", r.time.Unix(), r.value)
+      io.WriteString(stdin, fmt.Sprintf("%d %f\n", r.time.Unix(), r.value))
+    }
+    io.WriteString(stdin, "\n")
+	  stdin.Close()
     
     // fetch result from worker
+    var outchan chan string = make(chan string)
+    go func (stdout io.Reader, response chan string) {
+      var output string = ""
+	    scanner := bufio.NewScanner(stdout)
+	    scanner.Split(bufio.ScanLines)
+	    for scanner.Scan() {
+	      output += scanner.Text()+"\n"
+	    }
+	    response <- output
+    }(stdout, outchan)
+	  var output string = <- outchan
+    err = cmd.Wait()
+	  if err != nil {
+		  fmt.Println("Unable to wait worker:", err)
+		  wg.Done()
+		  continue
+	  }
+//	  output, err := cmd.Output()
+//	  if err != nil {
+//		  fmt.Println("Unable to get output from worker:", err)
+//		  wg.Done()
+//		  continue
+//	  }
+	  fmt.Println("Output:", output)
+	  
     
     // publish result
 //    k.Produce(&kafka.Message{
