@@ -11,7 +11,7 @@ for line in fileinput.input():
   line = line.strip()
   if line=="": break
   try:
-    es = list(map(int, line.split(" ")))
+    es = list(map(float, line.split(" ")))
     if len(es) != 2:
       print("Cannot parse line:", line, file=stderr)
       exit(1)
