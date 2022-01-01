@@ -100,19 +100,15 @@ func worker () {
     } else {
       for rows.Next() {
         var r Reading
-//        var t time.Time
-//        var v float64
         err = rows.Scan(&r.time, &r.value)
         if err != nil {
           fmt.Println("Unable to scan samples:", q, err);
           break
         } else {
-          fmt.Println(r)
           readings.PushBack(r)
         }
       }
     }
-    fmt.Println(readings.Len())
     
     // start worker
     
