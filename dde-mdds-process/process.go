@@ -56,27 +56,31 @@ func start_postgress_client () (*sql.DB, error) {
   return db, err
 }
 
-func start_kafka_client () (*kafka.Producer, error) {
+func start_kafka_client () (*kafka.Producer, chan bool, error) {
+  var response chan bool = make(chan bool)
+  
   k, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost"})
 	if err != nil {
 		panic(err)
 	}
 	
   // Delivery report handler for produced messages
-  go func() {
+  go func(response chan bool) {
     for e := range k.Events() {
       switch ev := e.(type) {
       case *kafka.Message:
         if ev.TopicPartition.Error != nil {
           fmt.Printf("Delivery failed: %v\n", ev.TopicPartition)
+          response <- false
         } else {
           fmt.Printf("Delivered message to %v\n", ev.TopicPartition)
+          response <- true
         }
       }
     }
-  }()
+  }(response)
   
-  return k, err
+  return k, response, err
 }
 
 func worker () {
@@ -85,7 +89,7 @@ func worker () {
 	defer db.Close()
   
   // start kafka client
-  k, _ := start_kafka_client()
+  k, kafka_response, _ := start_kafka_client()
 	defer k.Close()
   
   for wp := range worklist {
@@ -93,7 +97,7 @@ func worker () {
     fmt.Println(wp)
     
     // fetch timeseries
-    q := fmt.Sprintf("SELECT samples.time, samples.value FROM metadata, samples WHERE samples.metadata_id = metadata.id")
+    q := fmt.Sprintf("SELECT samples.time, samples.value FROM metadata, samples WHERE samples.metadata_id = metadata.id AND metadata.device_id='%s' and metadata.sensor_id='%s'", wp.device_id, wp.sensor_id)
     fmt.Println(q)
     rows, err := db.Query(q)
     if err != nil {
@@ -164,6 +168,16 @@ func worker () {
       TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
       Value:          []byte(output),
     }, nil)
+    
+    // mark as processed
+    var success bool = <- kafka_response
+    if success {
+      q := fmt.Sprintf("UPDATE control SET processed=TRUE FROM metadata WHERE control.metadata_id=metadata.id AND  metadata.device_id='%s' and metadata.sensor_id='%s'", wp.device_id, wp.sensor_id)
+      _, err = db.Exec(q)
+      if err != nil {
+        fmt.Println("Unable to mark as processed:", q);
+      }
+    } 
     
     wg.Done()
   }
