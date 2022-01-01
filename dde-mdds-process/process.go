@@ -37,12 +37,12 @@ const (
   WORKQUEUE_SIZE = 16
   SLEEP_TIME      = 60 // unit: s
   COLLECTION_TIME = 60 // unit: ?
-  topic    = "myTopic"
 )
 
 var (
   wg       *sync.WaitGroup  = new(sync.WaitGroup)
   worklist chan WorkPackage = make(chan WorkPackage, WORKQUEUE_SIZE)
+  topic    = "metadata_discovery"
 )
 
 func start_postgress_client () (*sql.DB, error) {
@@ -159,12 +159,11 @@ func worker () {
 	  }
 	  fmt.Println("Output:", output)
 	  
-    
     // publish result
-//    k.Produce(&kafka.Message{
-//      TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-//      Value:          []byte(word),
-//    }, nil)
+    k.Produce(&kafka.Message{
+      TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+      Value:          []byte(output),
+    }, nil)
     
     wg.Done()
   }
