@@ -134,7 +134,6 @@ func worker () {
     // push timeseries to worker
     for e := readings.Front(); e != nil; e = e.Next() {
       var r Reading = e.Value.(Reading)
-//      fmt.Printf("%d %f\n", r.time.Unix(), r.value)
       io.WriteString(stdin, fmt.Sprintf("%d %f\n", r.time.Unix(), r.value))
     }
     io.WriteString(stdin, "\n")
@@ -158,12 +157,6 @@ func worker () {
 		  wg.Done()
 		  continue
 	  }
-//	  output, err := cmd.Output()
-//	  if err != nil {
-//		  fmt.Println("Unable to get output from worker:", err)
-//		  wg.Done()
-//		  continue
-//	  }
 	  fmt.Println("Output:", output)
 	  
     
