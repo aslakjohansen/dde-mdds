@@ -4,6 +4,8 @@ import (
   "fmt"
   "sync"
   "encoding/json"
+  "os"
+  "strconv"
   
   // kafka
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -14,17 +16,27 @@ import (
 )
 
 const (
-  host     = "192.168.1.38"
-  port     = 5432
-  user     = "docker"
-  password = "docker"
-  dbname   = "mdds"
-  CONSUMER_COUNT = 1
+  default_broker         = "localhost"
+  default_topic          = "myTopic"
+  default_host           = "192.168.1.38"
+  default_port           = 5432
+  default_user           = "docker"
+  default_password       = "docker"
+  default_database       = "mdds"
+  default_consumer_count = 1
 )
 
 var (
   key2id map[string]int = make(map[string]int)
   lookup_mutex sync.Mutex
+  broker string
+  topic string
+  host string
+  port int
+  user string
+  password string
+  database string
+  consumer_count int
 )
 
 type Message struct {
@@ -37,6 +49,55 @@ type Message struct {
   Value        float64 `json:"Value"`
   Status       string  `json:"Status"`
   DeviceID     string  `json:"DeviceID"`
+}
+
+func pull_env () {
+  parameter_string := func (key string, default_value string) string {
+    value, present := os.LookupEnv(key)
+    if present {
+      return value
+    } else {
+      return default_value
+    }
+  }
+  parameter_int := func (key string, default_value int) int {
+    value, present := os.LookupEnv(key)
+    if present {
+      i, err := strconv.Atoi(value)
+      if err==nil {
+        return i
+      } else {
+        fmt.Printf("Err: Unable to parse environment variable '%s' as int\n", key)
+        os.Exit(1)
+        return -1
+      }
+    } else {
+      return default_value
+    }
+  }
+  
+  broker         = parameter_string("KAFKA_BROKER"      , default_broker)
+  topic          = parameter_string("KAFKA_INGEST_TOPIC", default_topic)
+  host           = parameter_string("DBMS_HOST"    , default_host)
+  user           = parameter_string("DBMS_USER"    , default_user)
+  password       = parameter_string("DBMS_PASSWORD", default_password)
+  database       = parameter_string("DBMS_DATABASE", default_database)
+  port           = parameter_int(   "DBMS_PORT"      , default_port)
+  consumer_count = parameter_int(   "CONSUMER_COUNT"   , default_consumer_count)
+  
+  fmt.Println("Configuration (override through environment variables):")
+  fmt.Printf(" - Kafka:\n")
+  fmt.Printf("   - broker='%s' (env KAFKA_BROKER)\n", broker)
+  fmt.Printf("   - topic='%s' (env KAFKA_INGEST_TOPIC)\n", topic)
+  fmt.Printf(" - DBMS:\n")
+  fmt.Printf("   - host='%s' (env DBMS_HOST)\n", host)
+  fmt.Printf("   - user='%s' (env DBMS_USER)\n", user)
+  fmt.Printf("   - password='%s' (env DBMS_PASSWORD)\n", password)
+  fmt.Printf("   - database='%s' (env DBMS_DATABASE)\n", database)
+  fmt.Printf("   - port='%d' (env DBMS_PORT)\n", port)
+  fmt.Printf(" - Operation:\n")
+  fmt.Printf("   - consumer_count='%d' (env CONSUMER_COUNT)\n", consumer_count)
+  fmt.Printf("\n")
 }
 
 func lookup_id (db *sql.DB, deviceid string, sensorid string) int {
@@ -105,7 +166,7 @@ func insert (ch chan Message) {
 //        host,
 //        port,
 //        dbname)
-  psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+  psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, database)
   db, err := sql.Open("postgres", psqlconn)
   if err != nil {
     fmt.Println("Unable to create connection to database", err)
@@ -136,13 +197,15 @@ func insert (ch chan Message) {
 }
 
 func main () {
+  pull_env()
+  
   // start consumers
   var ch chan Message = make(chan Message, 16)
-  for i:=0; i<CONSUMER_COUNT; i++ { go insert(ch) }
+  for i:=0; i<consumer_count; i++ { go insert(ch) }
   
   // create consumer
   c, err := kafka.NewConsumer(&kafka.ConfigMap{
-    "bootstrap.servers": "localhost",
+    "bootstrap.servers": broker,
     "group.id":          "myGroup",
     "auto.offset.reset": "earliest",
   })
@@ -152,7 +215,7 @@ func main () {
   defer c.Close()
   
   // register subscription
-  c.SubscribeTopics([]string{"myTopic"}, nil)
+  c.SubscribeTopics([]string{topic}, nil)
   
   // service loop
   for {
