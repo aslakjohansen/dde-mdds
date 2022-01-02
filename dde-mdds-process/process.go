@@ -8,6 +8,8 @@ import (
   "os/exec"
   "io"
   "bufio"
+  "os"
+  "strconv"
   
   // kafka
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -28,25 +30,97 @@ type Reading struct {
 }
 
 const (
-  host     = "192.168.1.38"
-  port     = 5432
-  user     = "docker"
-  password = "docker"
-  dbname   = "mdds"
-  WORKER_COUNT = 1
-  WORKQUEUE_SIZE = 16
-  SLEEP_TIME      = 60 // unit: s
-  COLLECTION_TIME = 60 // unit: ?
+  default_host     = "192.168.1.38"
+  default_port     = 5432
+  default_user     = "docker"
+  default_password = "docker"
+  default_database = "mdds"
+  default_worker_count = 1
+  default_workqueue_size = 16
+  default_sleep_time      = 60 // unit: s
+  default_collection_time = 60 // unit: ?
 )
 
 var (
   wg       *sync.WaitGroup  = new(sync.WaitGroup)
-  worklist chan WorkPackage = make(chan WorkPackage, WORKQUEUE_SIZE)
+  worklist chan WorkPackage
   topic    = "metadata_discovery"
+  host string
+  port int
+  user string
+  password string
+  database string
+  worker_count int
+  workqueue_size int
+  sleep_time int
+  collection_time float64
 )
 
+func pull_env () {
+  parameter_string := func (key string, default_value string) string {
+    value, present := os.LookupEnv(key)
+    if present {
+      return value
+    } else {
+      return default_value
+    }
+  }
+  parameter_int := func (key string, default_value int) int {
+    value, present := os.LookupEnv(key)
+    if present {
+      i, err := strconv.Atoi(value)
+      if err==nil {
+        return i
+      } else {
+        fmt.Printf("Err: Unable to parse environment variable '%s' as int\n", key)
+        os.Exit(1)
+        return -1
+      }
+    } else {
+      return default_value
+    }
+  }
+  parameter_float := func (key string, default_value float64) float64 {
+    value, present := os.LookupEnv(key)
+    if present {
+      f, err := strconv.ParseFloat(value, 64)
+      if err==nil {
+        return f
+      } else {
+        fmt.Printf("Err: Unable to parse environment variable '%s' as int\n", key)
+        os.Exit(1)
+        return -1
+      }
+    } else {
+      return default_value
+    }
+  }
+  
+  host            = parameter_string("DBMS_HOST"    , default_host)
+  user            = parameter_string("DBMS_USER"    , default_user)
+  password        = parameter_string("DBMS_PASSWORD", default_password)
+  database        = parameter_string("DBMS_DATABASE", default_database)
+  port            = parameter_int(   "DBMS_PORT"      , default_port)
+  worker_count    = parameter_int(   "WORKER_COUNT"   , default_worker_count)
+  workqueue_size  = parameter_int(   "WORKQUEUE_SIZE" , default_workqueue_size)
+  sleep_time      = parameter_int(   "SLEEP_TIME"     , default_sleep_time)
+  collection_time = parameter_float("COLLECTION_TIME", default_collection_time)
+  
+  fmt.Println("Configuration (override through environment variables):")
+  fmt.Printf(" - host='%s' (env DBMS_HOST)\n", host)
+  fmt.Printf(" - user='%s' (env DBMS_USER)\n", user)
+  fmt.Printf(" - password='%s' (env DBMS_PASSWORD)\n", password)
+  fmt.Printf(" - database='%s' (env DBMS_DATABASE)\n", database)
+  fmt.Printf(" - port='%d' (env DBMS_PORT)\n", port)
+  fmt.Printf(" - worker_count='%d' (env WORKER_COUNT)\n", worker_count)
+  fmt.Printf(" - workqueue_size='%d' (env WORKQUEUE_SIZE)\n", workqueue_size)
+  fmt.Printf(" - sleep_time='%d' (env SLEEP_TIME)\n", sleep_time)
+  fmt.Printf(" - collection_time='%f' (env COLLECTION_TIME)\n", collection_time)
+  fmt.Printf("\n")
+}
+
 func start_postgress_client () (*sql.DB, error) {
-  psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+  psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, database)
   db, err := sql.Open("postgres", psqlconn)
   if err != nil {
     fmt.Println("Unable to create connection to database", err)
@@ -184,8 +258,11 @@ func worker () {
 }
 
 func main () {
+  pull_env()
+  worklist = make(chan WorkPackage, workqueue_size)
+  
   // init
-  for i:=0; i<WORKER_COUNT; i++ { go worker() }
+  for i:=0; i<worker_count; i++ { go worker() }
   db, _ := start_postgress_client()
 	defer db.Close()
   
@@ -212,7 +289,7 @@ func main () {
           break
         }
         
-        if timediff > COLLECTION_TIME {
+        if timediff > collection_time {
           worklist <- WorkPackage{device_id, sensor_id}
           wg.Add(1)
         }
@@ -223,6 +300,6 @@ func main () {
     wg.Wait()
     
     // wait
-    time.Sleep(time.Duration(SLEEP_TIME) * time.Second)
+    time.Sleep(time.Duration(sleep_time) * time.Second)
   }
 }
