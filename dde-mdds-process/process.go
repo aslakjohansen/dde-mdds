@@ -30,6 +30,8 @@ type Reading struct {
 }
 
 const (
+  default_broker   = "localhost"
+  default_topic    = "metadata_discovery"
   default_host     = "192.168.1.38"
   default_port     = 5432
   default_user     = "docker"
@@ -44,7 +46,8 @@ const (
 var (
   wg       *sync.WaitGroup  = new(sync.WaitGroup)
   worklist chan WorkPackage
-  topic    = "metadata_discovery"
+  broker string
+  topic string
   host string
   port int
   user string
@@ -96,6 +99,8 @@ func pull_env () {
     }
   }
   
+  broker          = parameter_string("KAFKA_BROKER"   , default_broker)
+  topic           = parameter_string("KAFKA_PUB_TOPIC", default_topic)
   host            = parameter_string("DBMS_HOST"    , default_host)
   user            = parameter_string("DBMS_USER"    , default_user)
   password        = parameter_string("DBMS_PASSWORD", default_password)
@@ -107,6 +112,8 @@ func pull_env () {
   collection_time = parameter_float("COLLECTION_TIME", default_collection_time)
   
   fmt.Println("Configuration (override through environment variables):")
+  fmt.Printf(" - broker='%s' (env KAFKA_BROKER)\n", broker)
+  fmt.Printf(" - topic='%s' (env KAFKA_PUB_TOPIC)\n", topic)
   fmt.Printf(" - host='%s' (env DBMS_HOST)\n", host)
   fmt.Printf(" - user='%s' (env DBMS_USER)\n", user)
   fmt.Printf(" - password='%s' (env DBMS_PASSWORD)\n", password)
@@ -133,7 +140,7 @@ func start_postgress_client () (*sql.DB, error) {
 func start_kafka_client () (*kafka.Producer, chan bool, error) {
   var response chan bool = make(chan bool)
   
-  k, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost"})
+  k, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": broker})
 	if err != nil {
 		panic(err)
 	}
