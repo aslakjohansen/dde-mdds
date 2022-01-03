@@ -13,3 +13,15 @@ make
 ./process
 ```
 
+# Dockerization
+
+Build
+```shell
+make docker
+```
+
+Run
+```shell
+docker run -d dde-mdds-process
+```
+
