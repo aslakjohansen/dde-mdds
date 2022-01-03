@@ -22,10 +22,56 @@ for line in fileinput.input():
 
 # write output
 result = {
-  "modality": [
+  "Unit": [
+    {
+      "result": "DegC",
+      "score": 0.13
+    },
+    {
+      "result": "W",
+      "score": 0.08
+    },
+    {
+      "result": "DegF",
+      "score": 0.02
+    },
+  ],
+  "Factor": [
+    {
+      "result": "1",
+      "score": 0.17
+    },
+    {
+      "result": "1000",
+      "score": 0.074
+    },
+  ],
+  "SensorType": [
     {
       "result": "temperature",
+      "score": 0.12
+    },
+    {
+      "result": "energy",
       "score": 0.1
+    },
+  ],
+  "TsDataType": [
+    {
+      "result": "tællerstand",
+      "score": 0.17
+    },
+    {
+      "result": "tilstand",
+      "score": 0.089
+    },
+    {
+      "result": "forbrugsmåler",
+      "score": 0.006
+    },
+    {
+      "result": "lager",
+      "score": 0.0008
     },
   ],
 }
