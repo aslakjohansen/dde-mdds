@@ -17,6 +17,7 @@ import (
 
 const (
   default_broker         = "localhost"
+  default_group          = "myGroup"
   default_topic          = "myTopic"
   default_host           = "192.168.1.38"
   default_port           = 5432
@@ -30,6 +31,7 @@ var (
   key2id map[string]int = make(map[string]int)
   lookup_mutex sync.Mutex
   broker string
+  group string
   topic string
   host string
   port int
@@ -77,6 +79,7 @@ func pull_env () {
   }
   
   broker         = parameter_string("KAFKA_BROKER"      , default_broker)
+  group          = parameter_string("KAFKA_GROUP"       , default_group)
   topic          = parameter_string("KAFKA_INGEST_TOPIC", default_topic)
   host           = parameter_string("DBMS_HOST"    , default_host)
   user           = parameter_string("DBMS_USER"    , default_user)
@@ -88,6 +91,7 @@ func pull_env () {
   fmt.Println("Configuration (override through environment variables):")
   fmt.Printf(" - Kafka:\n")
   fmt.Printf("   - broker='%s' (env KAFKA_BROKER)\n", broker)
+  fmt.Printf("   - group='%s' (env KAFKA_GROUP)\n", group)
   fmt.Printf("   - topic='%s' (env KAFKA_INGEST_TOPIC)\n", topic)
   fmt.Printf(" - DBMS:\n")
   fmt.Printf("   - host='%s' (env DBMS_HOST)\n", host)
@@ -206,7 +210,7 @@ func main () {
   // create consumer
   c, err := kafka.NewConsumer(&kafka.ConfigMap{
     "bootstrap.servers": broker,
-    "group.id":          "myGroup",
+    "group.id":          group,
     "auto.offset.reset": "earliest",
   })
   if err != nil {
