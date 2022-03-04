@@ -229,7 +229,9 @@ func main () {
       err := json.Unmarshal(encoded.Value, &msg)
       if err == nil {
         ch <- msg
-      }
+      } else {
+        fmt.Printf("UnMarshal error: %v (%v)\n", err, encoded)
+      }	    
     } else {
       // The client will automatically try to recover from all errors.
       fmt.Printf("Consumer error: %v (%v)\n", err, encoded)
