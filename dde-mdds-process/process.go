@@ -7,6 +7,7 @@ import (
   "container/list"
   "os/exec"
   "io"
+  "io/ioutil"
   "bufio"
   "os"
   "strconv"
@@ -247,7 +248,7 @@ func worker () {
 	  var output string = <- outchan
     err = cmd.Wait()
 	  if err != nil {
-		  error, _ := io.ReadAll(stderr)
+		  error, _ := ioutil.ReadAll(stderr)
 		  fmt.Println("Unable to wait worker:", fmt.Sprint(err) + ": " + error)
 		  wg.Done()
 		  continue
