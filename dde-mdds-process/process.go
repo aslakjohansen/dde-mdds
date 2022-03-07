@@ -202,6 +202,7 @@ func worker () {
     }
     
     // start worker
+    var stderr bytes.Buffer
     var cmd *
     exec.Cmd = exec.Command("/usr/bin/python", "./workers/dummy.py")
 	  stdin, err := cmd.StdinPipe()
@@ -212,6 +213,7 @@ func worker () {
 	  if err != nil {
 		  fmt.Println("Unable to connect to STDOUT of worker:", err)
 	  }
+    cmd.Stderr = &stderr
     err = cmd.Start()
 	  if err != nil {
 		  fmt.Println("Unable to start worker:", err)
@@ -241,7 +243,7 @@ func worker () {
 	  var output string = <- outchan
     err = cmd.Wait()
 	  if err != nil {
-		  fmt.Println("Unable to wait worker:", err)
+		  fmt.Println("Unable to wait worker:", fmt.Sprint(err) + ": " + stderr.String())
 		  wg.Done()
 		  continue
 	  }
