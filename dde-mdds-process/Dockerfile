@@ -2,7 +2,7 @@ FROM ubuntu:20.04
 
 COPY process.go /app/
 COPY Makefile /app/
-COPY workers/* /app/workers/*
+COPY workers/. /app/workers/
 
 WORKDIR /app
 
