@@ -249,7 +249,8 @@ func worker () {
     err = cmd.Wait()
 	  if err != nil {
 		  error, _ := ioutil.ReadAll(stderr)
-		  fmt.Println("Unable to wait worker:", fmt.Sprint(err) + ": " + error)
+		  fmt.Println("ERROR: %s", error)
+		  fmt.Println("Unable to wait for worker:", err)
 		  wg.Done()
 		  continue
 	  }
