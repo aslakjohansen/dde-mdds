@@ -247,7 +247,7 @@ func worker () {
 	  var output string = <- outchan
     err = cmd.Wait()
 	  if err != nil {
-		  fmt.Println("Unable to wait worker:", fmt.Sprint(err) + ": " + stderr.String())
+		  fmt.Println("Unable to wait worker:", fmt.Sprint(err) + ": " + string(stderr))
 		  wg.Done()
 		  continue
 	  }
