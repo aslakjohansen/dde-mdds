@@ -13,7 +13,7 @@ ENV TZ=Europe/Copenhagen
 
 # install golang, git and make
 RUN apt-get update
-RUN apt-get -y install golang git make python
+RUN apt-get -y install golang git make python3
 
 # setup golang
 ENV GO_PATH /app/go
