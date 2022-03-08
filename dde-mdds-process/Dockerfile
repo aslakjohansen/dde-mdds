@@ -2,7 +2,7 @@ FROM ubuntu:20.04
 
 COPY process.go /app/
 COPY Makefile /app/
-COPY workers /app/
+COPY workers/. /app/workers/
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ ENV TZ=Europe/Copenhagen
 
 # install golang, git and make
 RUN apt-get update
-RUN apt-get -y install golang git make
+RUN apt-get -y install golang git make python
 
 # setup golang
 ENV GO_PATH /app/go

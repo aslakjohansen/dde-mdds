@@ -7,6 +7,7 @@ import (
   "container/list"
   "os/exec"
   "io"
+  "io/ioutil"
   "bufio"
   "os"
   "strconv"
@@ -202,6 +203,7 @@ func worker () {
     }
     
     // start worker
+    
     var cmd *
     exec.Cmd = exec.Command("/usr/bin/python", "./workers/dummy.py")
 	  stdin, err := cmd.StdinPipe()
@@ -212,6 +214,11 @@ func worker () {
 	  if err != nil {
 		  fmt.Println("Unable to connect to STDOUT of worker:", err)
 	  }
+	  stderr, err := cmd.StderrPipe()
+	  if err != nil {
+		  fmt.Println("Unable to connect to STDERROR of worker:", err)
+	  }
+    
     err = cmd.Start()
 	  if err != nil {
 		  fmt.Println("Unable to start worker:", err)
@@ -241,7 +248,10 @@ func worker () {
 	  var output string = <- outchan
     err = cmd.Wait()
 	  if err != nil {
-		  fmt.Println("Unable to wait worker:", err)
+		  error, _ := ioutil.ReadAll(stderr)
+		  fmt.Printf("ERROR: %s\n", error)
+		  fmt.Println("Output:", output)
+		  fmt.Println("Unable to wait for worker:", err)
 		  wg.Done()
 		  continue
 	  }
