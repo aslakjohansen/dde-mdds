@@ -203,9 +203,7 @@ func worker () {
     }
     
     // start worker
-    
-    var cmd *
-    exec.Cmd = exec.Command("/usr/bin/python", "./workers/dummy.py")
+    var cmd *exec.Cmd = exec.Command("/usr/bin/python", "./workers/dummy.py")
 	  stdin, err := cmd.StdinPipe()
 	  if err != nil {
 		  fmt.Println("Unable to connect to STDIN of worker:", err)
