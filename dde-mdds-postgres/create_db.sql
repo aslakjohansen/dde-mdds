@@ -1,8 +1,8 @@
 -- timeseries metadata
 CREATE TABLE metadata(
   id SERIAL PRIMARY KEY,
-  device_id CHAR(100) NOT NULL,
-  sensor_id CHAR(100) NOT NULL,
+  device_id character varying(100) NOT NULL,
+  sensor_id character varying(100) NOT NULL,
   UNIQUE (device_id, sensor_id)
 );
 
